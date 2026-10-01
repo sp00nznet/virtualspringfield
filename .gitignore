@@ -1,0 +1,63 @@
+# Build artifacts
+build/
+build-*/
+out/
+cmake-build-*/
+*.obj
+*.o
+*.lib
+*.pdb
+*.ilk
+*.exp
+*.a
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+CMakeSettings.json
+CMakeUserPresets.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- Original game files: NOT redistributed in this repo ---
+# The Simpsons: Virtual Springfield (c) 1997 Fox Interactive / Twentieth
+# Century Fox. In copyright. Bring your own copy; Setup.cmd copies its files
+# into game/virtual and everything derived from them lands in work/.
+game/
+*.iso
+*.bin
+*.img
+*.cue
+*.exe
+*.EXE
+*.dll
+*.DLL
+*.zip
+*.7z
+*.rar
+*.cab
+
+# Derived from the game binary: the function catalog, the lift statistics,
+# run logs and recordings. The generated C is recompiler output and is never
+# committed (REPO_RULES section 3).
+work/
+scratch/
+src/recomp/gen/
+*.i64
+*.idb
+*.mp4
+*.bmp
+
+setup.log
+Virtual Springfield.lnk
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
