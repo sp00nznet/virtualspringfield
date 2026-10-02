@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "ddraw_host.h"
+#include "present.h"
 
 #define ARG(n) MEM32(g_esp + 4 + 4 * (n))
 #define RET(v, nargs) do { g_eax = (uint32_t)(v); g_esp += 4 + 4 * (nargs); } while (0)
@@ -37,7 +38,6 @@
 static ddh_opts_t g_o;
 static HWND     g_wnd;
 static WNDPROC  g_prev;
-static int      g_scale = 1;
 static int      g_mode_w = VW, g_mode_h = VH, g_mode_bpp = 8;
 static long     g_frames, g_written;
 static FILE*    g_ffmpeg;
@@ -108,16 +108,6 @@ static void shadow_from_primary(void) {
     LeaveCriticalSection(&g_lock);
 }
 
-static void paint(HDC dc) {
-    BITMAPINFO bi = { { sizeof(BITMAPINFOHEADER), VW, -VH, 1, 32, BI_RGB } };
-    RECT rc;
-    GetClientRect(g_wnd, &rc);
-    EnterCriticalSection(&g_lock);
-    SetStretchBltMode(dc, COLORONCOLOR);
-    StretchDIBits(dc, 0, 0, rc.right, rc.bottom, 0, 0, VW, VH, g_shadow, &bi, DIB_RGB_COLORS, SRCCOPY);
-    LeaveCriticalSection(&g_lock);
-}
-
 static void save_bmp(const char* path) {
     BITMAPFILEHEADER fh = { 0x4D42 };
     BITMAPINFOHEADER ih = { sizeof ih, VW, -VH, 1, 32, BI_RGB };
@@ -154,11 +144,7 @@ static void present(const char* why) {
     g_frames++;
     if (g_frames == 1 || g_frames == 100 || g_frames % 1000 == 0)
         fprintf(stderr, "[capture] frame %ld presented (%s)\n", g_frames, why);
-    if (g_wnd && !g_o.headless) {
-        HDC dc = GetDC(g_wnd);
-        paint(dc);
-        ReleaseDC(g_wnd, dc);
-    }
+    if (!g_o.headless) present_frame(g_shadow);     /* present.c draws it, on its own thread */
     record_tick();
     if (g_o.shot_frame && g_frames == g_o.shot_frame) save_bmp(g_o.shot_path);
     if (g_o.stop_after && g_frames >= g_o.stop_after) {
@@ -616,7 +602,6 @@ static HRESULT WINAPI dd_GetScanLine(IDirectDraw* p, DWORD* l) { (void)p; *l = 0
 static HRESULT WINAPI dd_GetVerticalBlankStatus(IDirectDraw* p, BOOL* b) { (void)p; *b = TRUE; return DD_OK; }
 static HRESULT WINAPI dd_Initialize(IDirectDraw* p, GUID* g) { (void)p; (void)g; return DDERR_ALREADYINITIALIZED; }
 static HRESULT WINAPI dd_RestoreDisplayMode(IDirectDraw* p) { (void)p; return DD_OK; }
-static void fit_window(void);
 static HRESULT WINAPI dd_SetCooperativeLevel(IDirectDraw* p, HWND w, DWORD f) {
     (void)p;
     fprintf(stderr, "[ddraw] SetCooperativeLevel(%p, %08lX)\n", (void*)w, f);
@@ -627,7 +612,6 @@ static HRESULT WINAPI dd_SetDisplayMode(IDirectDraw* p, DWORD w, DWORD h, DWORD 
     fprintf(stderr, "[ddraw] SetDisplayMode(%lux%lux%lu)\n", w, h, bpp);
     if (w != VW || h != VH || (bpp != 8 && bpp != 16)) return DDERR_INVALIDMODE;
     g_mode_w = (int)w; g_mode_h = (int)h; g_mode_bpp = (int)bpp;
-    fit_window();
     return DD_OK;
 }
 /* Paces the game at 60 Hz, as the vertical blank it waits for did. */
@@ -650,41 +634,29 @@ static IDirectDrawVtbl g_dd_vt = {
 /* ------------------------------------------------------------ the window */
 
 /* The game's window is a borderless popup the size of the screen, made for a
- * display that has just switched to 640x480. Here it becomes an ordinary
- * window whose client area is 640x480 times the scale, and the mouse
- * coordinates the game sees are divided back down to 640x480. */
+ * display that has just switched to 640x480. Windowed, the presenter
+ * (present.c) makes it an ordinary resizable window and maps the mouse back
+ * to 640x480; headless, it is a cloaked 640x480 window nobody sees. */
 static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM w, LPARAM l) {
-    if (m >= WM_MOUSEFIRST && m <= WM_MOUSELAST && m != WM_MOUSEWHEEL && g_scale > 1)
-        l = MAKELPARAM((short)LOWORD(l) / g_scale, (short)HIWORD(l) / g_scale);
-    if (m == WM_PAINT && !g_o.headless) {
-        PAINTSTRUCT ps;
-        HDC dc = BeginPaint(h, &ps);
-        paint(dc);
-        EndPaint(h, &ps);
-        return 0;
-    }
+    LRESULT r;
+    if (present_message(h, m, w, &l, &r)) return r;
     if (m == WM_ERASEBKGND) return 1;
-    /* Headless, the window is cloaked and never active. The game would take
-     * a deactivation as alt-tab and stop drawing: it never hears of one. */
-    if (g_o.headless && ((m == WM_ACTIVATEAPP && !w) || (m == WM_ACTIVATE && LOWORD(w) == WA_INACTIVE)))
+    /* The game stops drawing when it loses activation, as on alt-tab.
+     * Headless, the window is never active, so it never hears of it; and
+     * windowed, the player can turn the pause off (Video menu). */
+    if ((g_o.headless || !present_pause_in_background()) &&
+        ((m == WM_ACTIVATEAPP && !w) || (m == WM_ACTIVATE && LOWORD(w) == WA_INACTIVE)))
         return 0;
     return CallWindowProcA(g_prev, h, m, w, l);
 }
 
-static void fit_window(void) {
-    if (!g_wnd) return;
-    DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
-    RECT r = { 0, 0, VW * g_scale, VH * g_scale };
+static void headless_window(void) {
+    DWORD style = WS_OVERLAPPED | WS_CAPTION;
+    RECT r = { 0, 0, VW, VH };
     AdjustWindowRect(&r, style, FALSE);
     SetWindowLongA(g_wnd, GWL_STYLE, style);
     SetWindowPos(g_wnd, NULL, 0, 0, r.right - r.left, r.bottom - r.top,
-                 SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED | (g_o.headless ? SWP_NOACTIVATE : 0));
-    if (!g_o.headless) {
-        RECT wa;                              /* centred on the work area */
-        SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
-        SetWindowPos(g_wnd, NULL, wa.left + (wa.right - wa.left - (r.right - r.left)) / 2,
-                     wa.top + (wa.bottom - wa.top - (r.bottom - r.top)) / 2, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
-    }
+                 SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOACTIVATE);
 }
 
 void ddh_shim_CreateWindowExA(void) {
@@ -707,7 +679,8 @@ void ddh_shim_CreateWindowExA(void) {
             DwmSetWindowAttribute(h, DWMWA_CLOAK, &on, sizeof on);
         }
         g_prev = (WNDPROC)SetWindowLongPtrA(h, GWLP_WNDPROC, (LONG_PTR)wndproc);
-        fit_window();
+        if (g_o.headless) headless_window();
+        else present_start(h);
         /* The game runs only while it is the active app (WM_ACTIVATEAPP
          * sets its flag at 0x0042CF80, and its loop waits in WaitMessage
          * otherwise). A cloaked window is never activated: tell it once. */
@@ -751,13 +724,13 @@ long ddh_frames(void) { return g_frames; }
 void ddh_init(const ddh_opts_t* o) {
     g_o = *o;
     InitializeCriticalSection(&g_lock);
-    g_scale = o->scale;
-    if (g_scale < 1) {                        /* the largest that fits the work area */
-        RECT wa;
-        SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
-        g_scale = 1;
-        while ((g_scale + 1) * VW + 16 <= wa.right - wa.left && (g_scale + 1) * VH + 40 <= wa.bottom - wa.top) g_scale++;
-        if (o->headless) g_scale = 1;
+    if (!o->headless) {
+        /* virtualspringfield.ini lives beside the exe: settings belong to
+         * this build of the host, not to the game folder (Hover!'s rule). */
+        char ini[MAX_PATH];
+        GetModuleFileNameA(NULL, ini, MAX_PATH);
+        strcpy(strrchr(ini, '\\') + 1, "virtualspringfield.ini");
+        present_init(ini, o->scale);
     }
     if (o->record) {
         char cmd[MAX_PATH + 256];

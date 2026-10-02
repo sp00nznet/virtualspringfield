@@ -29,5 +29,5 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x86
-      - name: host and DirectDraw compile (x86, /W3 /WX)
-        run: cl /nologo /c /W3 /WX /D_CRT_SECURE_NO_WARNINGS /Isrc/runtime /Ipcrecomp/runtime/native32 /Ipcrecomp/runtime/recomp32 src/runtime/host.c src/runtime/ddraw.c
+      - name: host, DirectDraw and presenter compile (x86, /W3 /WX)
+        run: cl /nologo /c /W3 /WX /D_CRT_SECURE_NO_WARNINGS /Isrc/runtime /Ipcrecomp/runtime/native32 /Ipcrecomp/runtime/recomp32 src/runtime/host.c src/runtime/ddraw.c src/runtime/present.c

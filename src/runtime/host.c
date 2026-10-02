@@ -21,6 +21,7 @@
 #include "native32.h"
 #include "recomp_trace.h"
 #include "ddraw_host.h"
+#include "present.h"
 
 extern const uint32_t vs_entry_va;       /* recomp_dispatch.c */
 
@@ -164,7 +165,9 @@ static DWORD WINAPI input_thread(LPVOID p) {
     HWND w = ddh_window();
     int vk = g_in[i].vk;
     if (g_in[i].x >= 0) {
-        LPARAM xy = MAKELPARAM(g_in[i].x, g_in[i].y);
+        int cx = g_in[i].x, cy = g_in[i].y;
+        present_unmap(&cx, &cy);            /* the presenter maps it back to X,Y */
+        LPARAM xy = MAKELPARAM(cx, cy);
         fprintf(stderr, "[input] click %d,%d at %lu ms\n", g_in[i].x, g_in[i].y, GetTickCount() - t0);
         PostMessageA(w, WM_MOUSEMOVE, 0, xy);
         Sleep(30);

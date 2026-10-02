@@ -19,23 +19,48 @@ mode).
 | Lift (`run_lift.py`) | **whole program**: 832 functions, 0 lift errors, 201K lines of C. pcrecomp `main`, no toolkit change |
 | Host (`build/virtualspringfield.exe`, 32-bit, pcrecomp `native32`) | 109 imports: 99 bound to real Windows, 10 shimmed. Nothing native from the original runs |
 | Install check | passes with no installer and no registry: the host answers the paths itself ([docs/host.md](docs/host.md)) |
-| Graphics | the host's own DirectDraw: the exclusive 640x480 8-bit mode becomes a window scaled to fit, palette fades included ([docs/display.md](docs/display.md)) |
+| Graphics | the host's own DirectDraw: the exclusive 640x480 8-bit mode becomes a window, palette fades included ([docs/display.md](docs/display.md)). The **presenter** scales it on Direct3D 11: sharp/smooth/nearest/integer/Scale2x, borderless fullscreen (F11), CRT, glow, dithering, vivid colour ([docs/presenter.md](docs/presenter.md)) |
 | Intro, title, Town Square | **run**: the Fox Interactive and Vortex logos, the title, Troy McClure's welcome |
 | Getting around | clicking works: the area map, walking to other places. Not yet played through |
 | Sound and music | DirectSound and the `midiStream` music open and stream with no error. **Not yet checked by ear** |
-| Windowed mode | runs, in an ordinary window at a whole-number scale |
+| Windowed mode | runs, in a resizable window with a **Video** menu; settings in `build\virtualspringfield.ini` |
 | Headless mode | `--headless --record out.mp4`, with `--click` and `--key` for scripted input. Never shows or activates a window ([docs/display.md](docs/display.md)) |
 | Conformance harness | **11/11** milestones (boot, install check, DirectDraw mode, 1,000 frames, a click on MAP opening the area map, idle at 95 s with no fault), 0 lift errors, 0 unresolvable tail calls, 0 unimplemented DirectDraw calls ([tools/conformance.py](tools/conformance.py)) |
 
 ## Screenshots
 
 Real output of `build\virtualspringfield.exe`, recompiled code throughout
-(headless recordings, and a windowed run):
+(headless recordings, and a windowed run from before the presenter):
 
 | | |
 |---|---|
 | ![the title screen](docs/img/title.png) | ![Town Square](docs/img/town-square.png) |
 | ![the area map, opened by a scripted click on MAP](docs/img/area-map.png) | ![a windowed run outside City Hall, with Patty and Selma](docs/img/windowed.png) |
+
+The presenter, fullscreen with the CRT look on (pillarboxed 4:3 on a
+1920x1080 screen):
+
+![Town Square through the presenter: fullscreen, CRT scanlines and curvature](docs/img/presenter-crt.png)
+
+## What's added on top
+
+Things the 1997 game never had, all of it host code beside the recompiled
+game (`src/runtime/`); none of it changes the game itself.
+
+**The presenter.** The game drew into an exclusive 640x480 8-bit screen.
+The port shows that picture in a resizable Direct3D 11 window: sharp,
+smooth, nearest, integer or Scale2x scaling, borderless fullscreen (F11 or
+Alt+Enter), a CRT effect with curvature, a glow on bright colours, 16-bit or
+8-bit retro dithering, and vivid colour. Clicks land where the pointer is at
+any size. The filters and CRT come from Hover! and gunman, Scale2x and the
+glow from SimCity 2000 ([docs/presenter.md](docs/presenter.md)).
+
+**No install, no disc.** The original wanted its installer's registry
+entries and the CD in the drive. The port runs from one folder.
+
+**Headless and recording.** `--headless --record out.mp4 --click ...` plays a
+scripted run without showing a window. The screenshots above were made this
+way.
 
 ## What is not in this repo
 
@@ -149,6 +174,11 @@ In the game: click to look around and walk, MAP for the area map, COLLECT for
 the cards you have found, OPEN/SAVE for the twelve save slots, QUIT to leave.
 The intro plays by itself (about 70 seconds).
 
+The **Video** menu (and `[video]` in `build\virtualspringfield.ini`, written
+with its defaults on the first windowed run) holds the filter, window size,
+fullscreen, CRT, glow, dithering, vivid colour, and whether the game pauses
+when its window loses the focus. F11 or Alt+Enter toggles fullscreen.
+
 | Flag | |
 |---|---|
 | `--run` | enter the game (without it: map, bind and stop) |
@@ -159,7 +189,7 @@ The intro plays by itself (about 70 seconds).
 | `--diff A,B` | print how much of the screen changed between A and B ms after start |
 | `--click X,Y@MS` | click at a 640x480 position, MS milliseconds after entry |
 | `--key NAME@MS[+HOLD]` | press a key MS milliseconds after entry, for HOLD ms (default 100): `ESC`, `SPACE`, `F1`, a letter, or a VK code |
-| `--scale N` | the window's client area is 640x480 times N (default: the largest that fits) |
+| `--scale N` | the window's client area is 640x480 times N, this run only (default: the ini's `scale`, or the largest that fits) |
 | `--game DIR` | the game folder (default `game\virtual`) |
 | `--watchdog S` | stop after S seconds and say where every thread was |
 | `--native-trace`, `--callbacks`, `--ddraw-trace` | one line per call into Windows, back from it, or into the host's DirectDraw |
@@ -173,8 +203,8 @@ Steps 3 to 5 above. `PCRECOMP` (Python) and `-DPCRECOMP=` (CMake, through
 `set CMAKE_ARGS=...` for `build.cmd`) point at a toolkit checkout other than
 `..\tools`; the lifter and the runtime must come from the same tree. How the
 pieces fit is [docs/architecture.md](docs/architecture.md); what the host
-does and why is [docs/host.md](docs/host.md) and
-[docs/display.md](docs/display.md). What is next: [ROADMAP.md](ROADMAP.md).
+does and why is [docs/host.md](docs/host.md),
+[docs/display.md](docs/display.md) and [docs/presenter.md](docs/presenter.md). What is next: [ROADMAP.md](ROADMAP.md).
 
 ## License
 

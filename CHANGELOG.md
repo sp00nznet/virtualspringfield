@@ -6,6 +6,12 @@ versions follow [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- The presenter (`src/runtime/present.c`): the picture in a resizable
+  Direct3D 11 window with a Video menu and `virtualspringfield.ini`. Sharp,
+  smooth, nearest and integer scaling, a CRT look and dithering from Hover!
+  and gunman; Scale2x and glow from SimCity 2000; borderless fullscreen (F11,
+  Alt+Enter); clicks mapped back to 640x480 at any size; an option to keep
+  running in the background.
 - The whole of `VIRTUAL.EXE` recompiled to C with pcrecomp (`disasm32`,
   `generate`, `lift32`): 832 functions, 0 lift errors. Needs pcrecomp `main`,
   no toolkit change.

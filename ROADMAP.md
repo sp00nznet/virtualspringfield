@@ -21,9 +21,8 @@ conformance milestone where one can check it.
 
 ## Later
 
-- **A better window.** Fullscreen (borderless), a smooth scaling filter, and
-  aspect-correct fractional scales; Hover!'s Direct3D 11 presenter is the
-  model.
+- **More presenter.** SimCity 2000's per-effect sliders (CRT strength, glow
+  threshold), and xBR next to Scale2x.
 - **Upstream the DirectDraw.** `ddraw.c` knows nothing about this game: any
   native32 title written for DirectX 3 to 5 that draws in 8-bit could use
   it. If a second title needs it, it moves to pcrecomp as

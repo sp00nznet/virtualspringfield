@@ -24,7 +24,7 @@ if(NOT GEN_SOURCES)
   message(FATAL_ERROR "src/recomp/gen is empty -- run `py -3 run_lift.py` first")
 endif()
 
-set(HOST_SOURCES src/runtime/host.c src/runtime/ddraw.c)
+set(HOST_SOURCES src/runtime/host.c src/runtime/ddraw.c src/runtime/present.c)
 add_executable(virtualspringfield
   ${HOST_SOURCES}
   ${PCRECOMP}/runtime/native32/native32.c
@@ -45,7 +45,7 @@ target_link_options(virtualspringfield PRIVATE /BASE:0x60000000 /FIXED:NO /DYNAM
 set(GEN_OPT "/O2" CACHE STRING "optimisation for the generated C")
 set_source_files_properties(${GEN_SOURCES} PROPERTIES COMPILE_OPTIONS "/w;${GEN_OPT}")
 set_source_files_properties(${HOST_SOURCES} PROPERTIES COMPILE_OPTIONS "/W3")
-target_link_libraries(virtualspringfield PRIVATE user32 gdi32 kernel32 advapi32 winmm dwmapi)
+target_link_libraries(virtualspringfield PRIVATE user32 gdi32 kernel32 advapi32 winmm dwmapi d3d11 dxgi dxguid)
 
 option(VS_TRACE "record a ring buffer of lifted function entries" OFF)
 if(VS_TRACE)

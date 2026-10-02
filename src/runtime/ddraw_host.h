@@ -12,7 +12,7 @@
 
 typedef struct {
     int headless;                /* cloak the window; never take focus */
-    int scale;                   /* window client = 640x480 * scale; 0 picks one from the screen */
+    int scale;                   /* --scale: window client = 640x480 * scale, this run only */
     int trace;                   /* one line per DirectDraw call */
     const char* record;          /* --record: ffmpeg pipe, 30 fps against the wall clock */
     long stop_after;             /* --frames N: exit after N presents */

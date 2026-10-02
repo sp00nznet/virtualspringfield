@@ -48,11 +48,10 @@ A present (a flip, a blit or unlock on the primary, a palette change, a GDI
 draw on the primary) converts the primary through its palette into a 640x480
 BGRA shadow. From there:
 
-- **Windowed** (`--run`): `StretchDIBits` into the game's window. The window
-  was a borderless popup the size of the screen; the host gives it a caption
-  and a client area of 640x480 times the scale (the largest that fits the
-  work area, or `--scale N`), and divides mouse coordinates back down, so
-  the game still sees 640x480.
+- **Windowed** (`--run`): the presenter ([presenter.md](presenter.md))
+  draws it into the game's window with Direct3D 11, at any size or
+  fullscreen, with filters and a CRT look, and maps the mouse back to
+  640x480.
 - **`--record out.mp4`**: the shadow goes to ffmpeg at a fixed 30 fps against
   the wall clock, from a thread of its own, so a still picture waiting for a
   click still advances the video.
@@ -69,6 +68,3 @@ BGRA shadow. From there:
 - 8-bit and RGB565 surfaces only; the game uses 8-bit.
 - The stretch blit is 8-bit and unclipped beyond the surfaces' edges. The
   game's stretches are all on screen.
-- The window is scaled by `StretchDIBits` with nearest-neighbour sampling,
-  so a fractional scale would be uneven. The automatic scale is a whole
-  number.
