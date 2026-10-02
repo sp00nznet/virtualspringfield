@@ -208,6 +208,6 @@ does and why is [docs/host.md](docs/host.md),
 
 ## License
 
-MIT, for the code in this repository ([LICENSE](LICENSE)). The Simpsons:
+MIT, for the code in this repository ([LICENSE](LICENSE); what it does not cover is in [NOTICE](NOTICE)). The Simpsons:
 Virtual Springfield is © 1997 Twentieth Century Fox Film Corporation and
 Fox Interactive; none of it is here.

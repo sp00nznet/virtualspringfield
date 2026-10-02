@@ -1,0 +1,18 @@
+The MIT licence in LICENSE covers what is actually ours in this repository:
+the host, the tools, the setup script and the documentation. It does NOT
+cover The Simpsons: Virtual Springfield itself.
+
+The Simpsons: Virtual Springfield is (c) 1997 Twentieth Century Fox Film
+Corporation and Fox Interactive, and is not ours to license. Its executable,
+animation, sound, music and save files are not in this repository and are
+excluded by .gitignore.
+
+Two consequences worth being explicit about:
+
+  * You need your own copy of the game to use any of this. Setup.cmd copies
+    your copy into game/virtual; the pipeline reads it from there.
+
+  * Lifted code is a derivative work of the binary it came from. Anything
+    this pipeline emits into work/ or src/recomp/gen/ carries whatever
+    licence the original carries, not this one. The MIT grant stops at our
+    own work.
