@@ -5,6 +5,7 @@ r"""Put your copy of Virtual Springfield's files in game/virtual/, from wherever
     py -3 tools/gamefiles.py "Virtual Springfield.cue"   # a BIN/CUE dump, or a 2048-byte ISO
     py -3 tools/gamefiles.py VirtualSpringfield.zip      # a zip holding the folder or the disc image
     py -3 tools/gamefiles.py D:\games\VIRTUAL            # a folder holding VIRTUAL.EXE and DATA\
+    py -3 tools/gamefiles.py D:\Downloads                # a folder holding the zip, .cue or .iso
     py -3 tools/gamefiles.py                             # look in every drive
 
 The game is the disc's VIRTUAL folder: VIRTUAL.EXE, DATA\ (about 610 MB of
@@ -144,6 +145,19 @@ def from_folder(src):
     return False
 
 
+def from_files_in(src):
+    """A folder holding a zip or disc image of the game (what the installer passes)."""
+    for f in sorted(os.listdir(src)):
+        p = os.path.join(src, f)
+        if f.lower().endswith('.zip') and zipfile.is_zipfile(p):
+            with zipfile.ZipFile(p) as z:
+                if from_zip(z, p):
+                    return True
+        elif f.lower().endswith(('.cue', '.iso')) and from_image(p):
+            return True
+    return False
+
+
 def main():
     src = sys.argv[1].strip('"') if len(sys.argv) > 1 else ''
     os.makedirs(os.path.join(ROOT, 'work'), exist_ok=True)
@@ -155,7 +169,7 @@ def main():
         else:
             sys.exit('no drive holds the Virtual Springfield CD; pass a drive, folder, zip or disc image')
     elif os.path.isdir(src):
-        if not from_folder(src):
+        if not from_folder(src) and not from_files_in(src):
             sys.exit('%s does not hold VIRTUAL.EXE with DATA\\ beside it (an installed copy has no DATA\\: '
                      'use the CD or a disc image)' % src)
     elif zipfile.is_zipfile(src):

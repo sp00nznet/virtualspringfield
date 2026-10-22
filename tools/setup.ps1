@@ -9,13 +9,26 @@
 # (-Force redoes them), so a rerun after a failure resumes. Everything it does
 # goes to setup.log.
 #
-#   -Game <drive, folder, .zip, .iso, .cue or .bin>   skip the question
+#   -Game <drive, folder, .zip, .iso, .cue or .bin>   skip the question (-GameDir too)
 #   -Yes                                              answer yes to every install question
-param([switch]$Force, [switch]$Yes, [string]$Game = "")
+#
+# For recomp-launcher (and anyone scripting it): -Yes installs what is missing
+# without asking and stops instead of asking where the game is, and
+# RECOMP_LAUNCHER=1 skips "Press Enter to close". The lift and the build run
+# every time (seconds, and Ninja is incremental), so an update never plays
+# old code.
+param([switch]$Force, [switch]$Yes, [Alias('GameDir')][string]$Game = "")
 
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
-$Toolkit = if ($env:PCRECOMP) { $env:PCRECOMP } else { Join-Path (Split-Path -Parent $Root) 'tools' }
+# pcrecomp: $env:PCRECOMP, else a checkout at ../tools, else ../pcrecomp (where
+# the installer puts it). catalog.py, run_lift.py and CMake read it too.
+$Toolkit = $env:PCRECOMP
+if (-not $Toolkit) {
+  $Toolkit = Join-Path (Split-Path -Parent $Root) 'tools'
+  if (-not (Test-Path (Join-Path $Toolkit 'tools\lift\lift32.py'))) { $Toolkit = Join-Path (Split-Path -Parent $Root) 'pcrecomp' }
+}
+$env:PCRECOMP = $Toolkit
 $Log = Join-Path $Root 'setup.log'
 Set-Location $Root
 function Log($t) { Add-Content -Path $Log -Value $t -Encoding UTF8 }
@@ -23,7 +36,7 @@ Log "==== setup $(Get-Date -Format s)"
 
 function Say($t, $c = 'Gray') { Write-Host $t -ForegroundColor $c; Log $t }
 function Step($n, $t) { Write-Host ""; Say "[$n/6] $t" 'Cyan' }
-function Pause-End { if (-not $Yes) { Read-Host "Press Enter to close" | Out-Null } }
+function Pause-End { if (-not $env:RECOMP_LAUNCHER) { Read-Host "Press Enter to close" | Out-Null } }
 function Fail($t) {
   Say ""; Say "Setup stopped: $t" 'Red'
   Say "The details are in $Log. Fix that and run Setup.cmd again; finished steps are skipped." 'Yellow'
@@ -49,7 +62,7 @@ function Run($what, [string[]]$cmd) {
   if ($code -ne 0) { Fail "$what failed (exit code $code)." }
 }
 
-Clear-Host
+if (-not $env:RECOMP_LAUNCHER) { Clear-Host }
 Say "Virtual Springfield: static recompilation setup" 'White'
 Say "You need your own copy of Virtual Springfield (the CD, a BIN/CUE or ISO of it, or a zip of either) and about 2 GB free."
 
@@ -137,6 +150,7 @@ if ((Test-Path 'game\virtual\VIRTUAL.EXE') -and (Test-Path 'game\virtual\DATA\MA
       if (Test-Path (Join-Path $d.Root 'VIRTUAL\VIRTUAL.EXE')) { $Game = $d.Root; Say "  Found the CD in $Game"; break }
     }
   }
+  if (-not $Game -and $Yes) { Fail "the Virtual Springfield CD was not found. Insert it, or choose a folder holding the game, its .cue or .iso, or a .zip of it." }
   while (-not $Game) {
     $Game = (Read-Host "  Where is Virtual Springfield? A drive (E:\), a .cue/.bin/.iso, a .zip, or a folder with VIRTUAL.EXE and DATA").Trim('"', ' ')
   }
@@ -150,16 +164,12 @@ else { Run "Disassembling VIRTUAL.EXE" ($pyargs + @('tools\catalog.py')) }
 
 # ---------------------------------------------------------------- lift
 Step 4 "Recompiling VIRTUAL.EXE to C (a few seconds)"
-if ((Test-Path 'src\recomp\gen\recomp_dispatch.c') -and -not $Force) { Say "  Already done (skipping)." }
-else { Run "Lifting" ($pyargs + @('run_lift.py')) }
+Run "Lifting" ($pyargs + @('run_lift.py'))   # every time: an update's lift rules must reach the C
 
 # ---------------------------------------------------------------- build
 Step 5 "Building build\virtualspringfield.exe (a minute or two)"
-if ((Test-Path 'build\virtualspringfield.exe') -and -not $Force) { Say "  Already built (skipping)." }
-else {
-  $env:CMAKE_ARGS = "-DPCRECOMP=$($Toolkit -replace '\\', '/')"
-  Run "Compiling" @('cmd', '/d', '/c', "`"$Root\build.cmd`"")
-}
+$env:CMAKE_ARGS = "-DPCRECOMP=$($Toolkit -replace '\\', '/')"
+Run "Compiling" @('cmd', '/d', '/c', "`"$Root\build.cmd`"")   # every time: Ninja rebuilds only what changed
 
 # ---------------------------------------------------------------- shortcut
 Step 6 "Making the shortcut"

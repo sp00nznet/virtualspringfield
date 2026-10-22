@@ -1,0 +1,17 @@
+{
+  "title": "The Simpsons: Virtual Springfield",
+  "repo": "sp00nznet/virtualspringfield",
+  "accent": "#f0c419",
+  "note": {
+    "default": "The build takes about 5 minutes and 2 GB. Python (with pefile and capstone) and the Visual Studio Build Tools (about 3 GB, 15 to 30 minutes more) are installed if they are missing; Windows asks for permission once. Choose the CD, or a folder holding its .cue/.iso or a zip of it. An installed copy will not do: its DATA folder stayed on the CD."
+  },
+  "game": {
+    "name": "The Simpsons: Virtual Springfield",
+    "files": ["VIRTUAL/VIRTUAL.EXE|VIRTUAL.EXE|*.cue|*.iso|*springfield*.zip"]
+  },
+  "sources": [{ "repo": "sp00nznet/pcrecomp", "ref": "main", "dir": "pcrecomp" }],
+  "setup": {
+    "default": ["cmd", "/c", "Setup.cmd", "-Yes", "-Game", "{game}"]
+  },
+  "play": "Virtual Springfield.lnk"
+}

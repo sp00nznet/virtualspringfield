@@ -12,7 +12,11 @@ import subprocess
 import sys
 
 _HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TOOLS = os.path.join(os.environ.get('PCRECOMP', os.path.join(_HERE, '..', 'tools')), 'tools')
+# pcrecomp: $PCRECOMP, else a checkout at ../tools, else ../pcrecomp (where the installer puts it)
+_PC = os.environ.get('PCRECOMP') or next(
+    (d for d in (os.path.join(_HERE, '..', 'tools'), os.path.join(_HERE, '..', 'pcrecomp'))
+     if os.path.isdir(os.path.join(d, 'tools', 'lift'))), os.path.join(_HERE, '..', 'pcrecomp'))
+TOOLS = os.path.join(_PC, 'tools')
 GAME = os.path.join(_HERE, 'game', 'virtual')
 
 os.makedirs(os.path.join(_HERE, 'work'), exist_ok=True)     # gitignored, so absent in a fresh copy
