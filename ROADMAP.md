@@ -6,6 +6,13 @@ conformance milestone where one can check it.
 
 ## Next
 
+- **Back onto pcrecomp `main`.** 0.1.0-alpha.1 pins `86fe9f5`. Today's
+  `main` finds 855 functions instead of 793 and lifts four with no
+  terminator; the game still reaches the area map (11/11 milestones), but
+  the harness counts the four as a regression. Find which change added
+  them, fix it there if they are false functions or accept the new baseline
+  if they are real, then move the pin.
+
 - **Play it through.** Walk every location, collect the cards, open and
   close each building, save and load a slot. Each place reached becomes a
   scripted conformance run (`--click` chains), so a regression in a

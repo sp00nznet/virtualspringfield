@@ -9,9 +9,9 @@
     "name": "The Simpsons: Virtual Springfield",
     "files": ["VIRTUAL/VIRTUAL.EXE|VIRTUAL.EXE|*.cue|*.iso|*springfield*.zip"]
   },
-  "sources": [{ "repo": "sp00nznet/pcrecomp", "ref": "main", "dir": "pcrecomp" }],
+  "sources": [{ "repo": "sp00nznet/pcrecomp", "ref": "86fe9f5fff5eae746f8fbd4b6c8694d92f19f867", "dir": "pcrecomp" }],
   "setup": {
-    "default": ["cmd", "/c", "Setup.cmd", "-Yes", "-Game", "{game}"]
+    "default": ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "tools\\setup.ps1", "-Yes", "-Game", "{game}"]
   },
   "play": "Virtual Springfield.lnk"
 }

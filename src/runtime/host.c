@@ -335,6 +335,14 @@ int main(int argc, char** argv) {
         }
     }
     GetFullPathNameA(game, MAX_PATH - 1, g_game, NULL);
+    /* The game keeps its folder in short buffers: from a 144-character
+     * folder it stalls before Town Square (docs/host.md). Its own 8.3 name
+     * fits, where the volume has them; otherwise the long name stays. */
+    {
+        char s[MAX_PATH];
+        DWORD n = GetShortPathNameA(g_game, s, MAX_PATH - 1);
+        if (n && n < MAX_PATH - 1) strcpy(g_game, s);
+    }
     if (g_game[strlen(g_game) - 1] != '\\') strcat(g_game, "\\");
     _snprintf(g_guest_exe, sizeof g_guest_exe - 1, "%sVIRTUAL.EXE", g_game);
     _snprintf(g_guest_cmdline, sizeof g_guest_cmdline - 1, "\"%s\"", g_guest_exe);

@@ -49,7 +49,7 @@ src\runtime\host.c + ddraw.c + pcrecomp runtime\native32 ─── build.cmd ─
    `native32`, `image_loader` and `recomp_trace` into one 32-bit executable,
    linked at `0x60000000` so the guest's `0x00400000` is free.
 
-The lift needs no toolkit change: pcrecomp `main` as it stands.
+The lift needs no toolkit change: pcrecomp `86fe9f5` (the pin in `launcher/launcher.json`; ROADMAP has why not `main`).
 
 ## At run time
 

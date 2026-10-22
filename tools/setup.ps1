@@ -105,7 +105,10 @@ if (-not (Test-Path (Join-Path $Toolkit 'tools\lift\lift32.py'))) {
   Say "  The pcrecomp toolkit is not beside this folder ($Toolkit)."
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Fail "git is needed to fetch pcrecomp. Install Git for Windows, then run Setup.cmd again." }
   if (-not (Ask "  Download it now (git, about 20 MB)?")) { Fail "pcrecomp is required at $Toolkit." }
-  Run "Cloning pcrecomp" @('git', 'clone', '--depth', '1', 'https://github.com/sp00nznet/pcrecomp', $Toolkit)
+  Run "Cloning pcrecomp" @('git', 'clone', 'https://github.com/sp00nznet/pcrecomp', $Toolkit)
+  # the commit this release was checked against; the installer fetches the same one
+  $pin = (Get-Content (Join-Path $Root 'launcher\launcher.json') -Raw | ConvertFrom-Json).sources[0].ref
+  Run "Checking out pcrecomp $pin" @('git', '-C', $Toolkit, 'checkout', '-q', $pin)
 }
 # The runtime this host is built on, by a function it adds: pcrecomp#7 (native32).
 if (-not (Select-String -Path (Join-Path $Toolkit 'runtime\native32\native32.c') -Pattern 'native32_export' -SimpleMatch -Quiet -ErrorAction SilentlyContinue)) {

@@ -10,13 +10,13 @@ Built on the [pcrecomp](https://github.com/sp00nznet/pcrecomp) toolchain and
 following its shared house style (layout, CLI, conformance harness, headless
 mode).
 
-## Status: **v0.1.0-dev, alpha. Boots, plays the intro and lets you walk Springfield, recompiled throughout.**
+## Status: **v0.1.0-alpha.1, alpha. Boots, plays the intro and lets you walk Springfield, recompiled throughout.**
 
 | Stage | State |
 |---|---|
 | P0: identify the binary | done: `VIRTUAL.EXE`, MSVC 4.2, no protection, no DLLs of its own |
 | Function catalog (`disasm32`) | 793 functions, 68.4% of the code bytes |
-| Lift (`run_lift.py`) | **whole program**: 832 functions, 0 lift errors, 201K lines of C. pcrecomp `main`, no toolkit change |
+| Lift (`run_lift.py`) | **whole program**: 832 functions, 0 lift errors, 201K lines of C. pcrecomp `86fe9f5`, no toolkit change |
 | Host (`build/virtualspringfield.exe`, 32-bit, pcrecomp `native32`) | 109 imports: 99 bound to real Windows, 10 shimmed. Nothing native from the original runs |
 | Install check | passes with no installer and no registry: the host answers the paths itself ([docs/host.md](docs/host.md)) |
 | Graphics | the host's own DirectDraw: the exclusive 640x480 8-bit mode becomes a window, palette fades included ([docs/display.md](docs/display.md)). The **presenter** scales it on Direct3D 11: sharp/smooth/nearest/integer/Scale2x, borderless fullscreen (F11), CRT, glow, dithering, vivid colour ([docs/presenter.md](docs/presenter.md)) |
@@ -77,6 +77,21 @@ inside works as it is). Nothing is downloaded for you.
 
 ### Quick start
 
+**The installer** (Windows 10/11): download
+`VirtualSpringfield-Recomp-Installer-windows-x64.exe` from the
+[latest release](https://github.com/sp00nznet/virtualspringfield/releases/latest)
+and run it. It is unsigned, so SmartScreen asks: **More info**, then **Run
+anyway**. It finds the CD in a drive, or **Choose folder...** picks the
+folder holding the game, its `.cue`/`.iso` or a zip of it. **Build** downloads
+this repository and pcrecomp (no git needed), runs `Setup.cmd` unattended, and
+ends on a **Play** button, with desktop shortcuts if you want them. The build
+goes in `%USERPROFILE%\recomp`. The installer is
+[recomp-launcher](https://github.com/sp00nznet/recomp-launcher) with
+[`launcher/launcher.json`](launcher/launcher.json); each release has a
+`SHA256SUMS.txt` beside it.
+
+**Or with `Setup.cmd`**, which is what the installer runs:
+
 1. Download this repository (the green **Code** button, then **Download ZIP**)
    and unzip it somewhere with 2 GB free.
 2. Double-click **`Setup.cmd`**.
@@ -87,7 +102,8 @@ installing any of them, saying what and how big. It finds the CD in your
 drives, or asks where the game is (a drive, a `.cue`/`.bin`/`.iso`, a `.zip`,
 or a folder). Then it copies the game into `game\virtual`, finds every
 function, recompiles `VIRTUAL.EXE` and builds `build\virtualspringfield.exe`.
-A rerun skips the finished steps. If it stops, it says why in one sentence,
+A rerun skips the finished steps (the lift and the build always run, and
+take seconds when nothing changed). If it stops, it says why in one sentence,
 and the details are in `setup.log`.
 
 It ends with a **`Virtual Springfield`** shortcut in the folder.
@@ -98,13 +114,20 @@ Double-click it to play.
 Prerequisites: Windows 10/11, **Python 3.10+** (`py -3 --version`), **git**,
 **Visual Studio 2022** (or its Build Tools) with *Desktop development with
 C++*, **ffmpeg** on `PATH` for `--record` only, and the pcrecomp toolkit
-cloned **beside** this repository as `tools`:
+cloned **beside** this repository as `pcrecomp` (or `tools`), at the commit
+this release was checked against (the `ref` in
+[`launcher/launcher.json`](launcher/launcher.json)):
 
 ```
 some-folder\
-  tools\                        <- git clone https://github.com/sp00nznet/pcrecomp tools
+  pcrecomp\                     <- git clone https://github.com/sp00nznet/pcrecomp
+                                   git -C pcrecomp checkout 86fe9f5
   virtualspringfield\           <- this repository
 ```
+
+pcrecomp `main` also builds a game that reaches the area map, but its
+catalog lifts four functions with no terminator, which the conformance
+harness counts as a regression ([ROADMAP.md](ROADMAP.md)).
 
 1. Python packages:
    ```
@@ -201,7 +224,7 @@ or a watchdog dump.
 
 Steps 3 to 5 above. `PCRECOMP` (Python) and `-DPCRECOMP=` (CMake, through
 `set CMAKE_ARGS=...` for `build.cmd`) point at a toolkit checkout other than
-`..\tools`; the lifter and the runtime must come from the same tree. How the
+`..\tools` or `..\pcrecomp`; the lifter and the runtime must come from the same tree. How the
 pieces fit is [docs/architecture.md](docs/architecture.md); what the host
 does and why is [docs/host.md](docs/host.md),
 [docs/display.md](docs/display.md) and [docs/presenter.md](docs/presenter.md). What is next: [ROADMAP.md](ROADMAP.md).

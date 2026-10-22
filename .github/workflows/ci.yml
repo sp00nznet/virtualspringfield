@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: sp00nznet/pcrecomp
+          ref: 86fe9f5fff5eae746f8fbd4b6c8694d92f19f867   # the ref in launcher/launcher.json
           path: pcrecomp
       - uses: actions/setup-python@v5
         with:

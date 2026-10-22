@@ -33,6 +33,23 @@ Nothing is read from or written to the real registry, so a player's own
 install of the original, if they have one, is left alone, and no setup step
 is needed.
 
+### The folder is handed over by its 8.3 name
+
+The game keeps these paths in short buffers. From
+`C:\Users\...\scratchpad\inst\virtualspringfield\game\virtual\` (a
+144-character folder, a clean install made while testing the installer) it
+played the logos and then stopped presenting before 1,000 frames: the
+conformance run scored 9/11, `[diff] 0%` at the MAP click, and no fault.
+The same files through a 9-character junction (`G:\vsfi`) scored 11/11.
+The longest path that works was not measured.
+
+So `main()` passes the game folder through `GetShortPathNameA` before it
+answers `HDPATH`, `CDPATH`, `GetModuleFileNameA` and `GetCommandLineA`
+with it: a 1997 program gets a 1997 path. A volume with 8.3 names turned off
+(common on non-system drives) gives back the long name, and then a long
+build folder can still stall it; the installer's default,
+`%USERPROFILE%\recomp\virtualspringfield`, is short enough on its own.
+
 ## Active, or waiting
 
 The main loop (`0x00411550`) runs a frame only while the flag at
